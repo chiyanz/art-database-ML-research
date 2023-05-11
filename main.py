@@ -22,7 +22,7 @@ np.random.seed(random)
 
 # Begin by importing the data
 art = pd.read_csv('theArt.csv')
-art.rename(columns={'Number ': "Number", 'Artist ': "Artist", 'Title' : "Title", 'Style': "Style", 'Year': "Year", 'Source (1 = classical, 2 = modern, 3 = nonhuman)': "Type", 'computerOrAnimal (0 = human, 1 = computer, 2 = animal)': "Computer",'Intent (0 = no, 1 = yes)': "Intent" }, inplace=True)
+art.rename(columns={'Number ': "Number", 'Artist ': "Artist", 'Title' : "Title", 'Style': "Style", 'Year': "Year", 'Source (1 = classical, 2 = modern, 3 = nonhuman)': "Source", 'computerOrAnimal (0 = human, 1 = computer, 2 = animal)': "Computer",'Intent (0 = no, 1 = yes)': "Intent" }, inplace=True)
 print(art.columns)
 
 data = pd.read_csv('theData.csv', index_col=False, names=range(1,222))
@@ -46,7 +46,180 @@ education = data.iloc[:,218]
 sophistication = data.iloc[:,219]
 amArtist = data.iloc[:,220]
 
+# %%
 # 1) Is classical art more well liked than modern art? 
+# get index of arts that are type 
+c_index = art.index[art['Source'] == 1].tolist()
+m_index = art.index[art['Source'] == 2].tolist()
+c_ratings = data.iloc[:, c_index].dropna()
+m_ratings = data.iloc[:, m_index].dropna()
+
+
+# filter nulls and resize to arr
+# same with other type
+cm_ind= stats.ttest_ind(c_ratings.to_numpy().flatten(), m_ratings.to_numpy().flatten(), equal_var=False)
+cm_ranksum = stats.mannwhitneyu(c_ratings.to_numpy().flatten(), m_ratings.to_numpy().flatten(), alternative = 'greater')
+print(cm_ind)
+print(cm_ranksum)
+# calc mean of each person 
+c_means = np.average(c_ratings.to_numpy(), axis=1)
+m_means = np.average(m_ratings.to_numpy(), axis=1)
+
+plt.subplot(1, 2, 1)
+plt.hist(c_ratings.to_numpy().flatten(),bins=7)
+plt.title("classical art ratings")
+plt.subplot(1, 2, 2)
+plt.hist(m_ratings.to_numpy().flatten(),bins=7)
+plt.title("modern art ratings")
+plt.show()
+#paired t 
+cm_paired = stats.ttest_rel(c_means, m_means)
+cm_ranksum2 = stats.mannwhitneyu(c_means, m_means, alternative = 'greater')
+
+print(cm_paired)
+print(cm_ranksum2)
+# %%
+# 2) Is there a difference in the preference ratings for modern art vs. non-human (animals and computers) generated art? 
+# repeat 1 setup 
+m_index = art.index[art['Source'] == 2].tolist()
+n_index = art.index[art['Source'] == 3].tolist()
+m_ratings = data.iloc[:, m_index].dropna()
+n_ratings = data.iloc[:, n_index].dropna()
+
+plt.subplot(1, 2, 1)
+plt.hist(m_ratings.to_numpy().flatten(),bins=7)
+plt.title("modern art ratings")
+plt.subplot(1, 2, 2)
+plt.hist(n_ratings.to_numpy().flatten(),bins=7)
+plt.title("nonhuman art ratings")
+plt.show()
+
+mn_ind= stats.ttest_ind(m_ratings.to_numpy().flatten(), n_ratings.to_numpy().flatten(), equal_var=False)
+mn_ranksum = stats.mannwhitneyu(m_ratings.to_numpy().flatten(), n_ratings.to_numpy().flatten())
+print(mn_ind)
+print(mn_ranksum)
+# calc mean of each person 
+m_means = np.average(m_ratings.to_numpy(), axis=1)
+n_means = np.average(n_ratings.to_numpy(), axis=1)
+
+#paired t 
+mn_paired = stats.ttest_rel(m_means, n_means)
+mn_ranksum2 = stats.mannwhitneyu(m_means, n_means)
+print(mn_paired)
+print(mn_ranksum2)
+
+#%%
+# 3) Do women give higher art preference ratings than men? 
+w_ratings = data.loc[data[217] == 2, :91].dropna()
+m_ratings = data.loc[data[217] == 1, :91].dropna()
+# test each category 
+c_index = art.index[art['Source'] == 1].tolist()
+m_index = art.index[art['Source'] == 2].tolist()
+n_index = art.index[art['Source'] == 3].tolist()
+
+wm_ind= stats.ttest_ind(w_ratings.to_numpy().flatten(), m_ratings.to_numpy().flatten(), equal_var=False)
+wm_ranksum = stats.mannwhitneyu(w_ratings.to_numpy().flatten(), m_ratings.to_numpy().flatten(), alternative = 'greater')
+print(wm_ind)
+print(wm_ranksum)
+
+wc_ratings = w_ratings.iloc[:, c_index]
+wm_ratings = w_ratings.iloc[:, m_index]
+wn_ratings = w_ratings.iloc[:, n_index]
+mc_ratings = m_ratings.iloc[:, c_index]
+mm_ratings = m_ratings.iloc[:, m_index]
+mn_ratings = m_ratings.iloc[:, n_index]
+
+print('\nWomen vs Men Classical')
+wmc_ind= stats.ttest_ind(wc_ratings.to_numpy().flatten(), mc_ratings.to_numpy().flatten(), equal_var=False)
+wmc_ranksum = stats.mannwhitneyu(wc_ratings.to_numpy().flatten(), mc_ratings.to_numpy().flatten(), alternative = 'greater')
+print(wmc_ind)
+print(wmc_ranksum)
+print('\nWomen vs Men Modern')
+wmm_ind= stats.ttest_ind(wm_ratings.to_numpy().flatten(), mm_ratings.to_numpy().flatten(), equal_var=False)
+wmm_ranksum = stats.mannwhitneyu(wm_ratings.to_numpy().flatten(), mm_ratings.to_numpy().flatten(), alternative = 'greater')
+print(wmm_ind)
+print(wmm_ranksum)
+print('\nWomen vs Men Nonhuman')
+wmn_ind= stats.ttest_ind(wn_ratings.to_numpy().flatten(), mn_ratings.to_numpy().flatten(), equal_var=False)
+wmn_ranksum = stats.mannwhitneyu(mn_ratings.to_numpy().flatten(), wn_ratings.to_numpy().flatten(), alternative = 'greater')
+print(wmn_ind)
+print(wmn_ranksum)
+
+plt.subplot(1, 2, 1)
+plt.hist(w_ratings.to_numpy().flatten(),bins=7)
+plt.title("women art ratings")
+plt.subplot(1, 2, 2)
+plt.hist(m_ratings.to_numpy().flatten(),bins=7)
+plt.title("men art ratings")
+# %%
+# 4 ) 
+# no need to clean df, already no nulls
+# ratings of each art education group 
+# compare 0 vs 1, 0 vs 2, 0 vs 3
+# ACCOUNT FOR POSSIBILE DIFF VARIANCE
+education0_ratings = preferenceRating[education == 0]
+education1_ratings = preferenceRating[education == 1]
+education2_ratings = preferenceRating[education == 2]
+education3_ratings = preferenceRating[education == 3]
+
+education0_arr = education0_ratings.to_numpy().flatten()
+education1_arr = education1_ratings.to_numpy().flatten()
+education2_arr = education2_ratings.to_numpy().flatten()
+education3_arr = education3_ratings.to_numpy().flatten()
+
+var_0 = education0_ratings.var(axis = 1)
+plt.subplot(2, 2, 1)
+print(var_0)
+plt.hist(education0_arr,bins=7)
+plt.title("Distribution of ratings: 0")
+
+plt.subplot(2, 2, 2)
+plt.hist(education1_arr,bins=7)
+plt.title("Distribution of ratings: 1")
+
+plt.subplot(2, 2, 3)
+plt.hist(education2_arr,bins=7)
+plt.title("Distribution of ratings: 2")
+
+plt.subplot(2, 2, 4)
+plt.hist(education3_arr,bins=7)
+plt.title("Distribution of ratings: 3")
+plt.show()
+
+
+# between art education 0 vs 3
+# independent t-test
+e0_e3_indt = stats.ttest_ind(education0_arr, education3_arr, equal_var=False)
+print(e0_e3_indt)
+# Mann-Whitney U rank test
+e0_e3_ranksum = stats.mannwhitneyu(education0_arr, education3_arr)
+print(e0_e3_ranksum)
+
+# between art education 0 vs 2
+# independent t-test
+e0_e2_indt = stats.ttest_ind(education0_arr, education2_arr, equal_var=False)
+print(e0_e2_indt)
+# Mann-Whitney U rank test
+e0_e2_ranksum = stats.mannwhitneyu(education0_arr, education2_arr)
+print(e0_e2_ranksum)
+
+# between art education 0 vs 1
+# independent t-test
+e0_e1_indt = stats.ttest_ind(education0_arr, education1_arr, equal_var=False)
+print(e0_e1_indt)
+# Mann-Whitney U rank test
+e0_e1_ranksum = stats.mannwhitneyu(education0_arr, education1_arr)
+print(e0_e1_ranksum)
+
+# BONUS
+# between art education 1 and 2
+# independent t-test
+e1_e2_indt = stats.ttest_ind(education1_arr, education2_arr, equal_var=False)
+print(e1_e2_indt)
+# Mann-Whitney U rank test
+e1_e2_ranksum = stats.mannwhitneyu(education1_arr, education2_arr)
+print(e1_e2_ranksum)
+# NOT SIGNIFICANT
 
 # 5) Build a regression model to predict art preference ratings from energy ratings only
 # %% 
@@ -81,7 +254,6 @@ x1 = np.average(energyRating.to_numpy(), axis=1)
 x1 = x1.reshape(len(x1),1) 
 y1 = np.average(preferenceRating.to_numpy(), axis=1)
 x1_train, x1_test, y1_train, y1_test = train_test_split(x1, y1, random_state=random)
-
 linReg = LinearRegression()
 linReg.fit(x1_train, y1_train)
 
@@ -99,14 +271,14 @@ plt.show()
 #%%
 # 5b) regularization
 
-
+print('Method 1 regularization')
 alpha = 10
 ridge_reg = Ridge(alpha=alpha)
 ridge_reg.fit(x_train, y_train)
 y_ridge = ridge_reg.predict(x_test)
 regular_rsq = ridge_reg.score(x_train, y_train)
 print(f'Alpha = {alpha}')
-print(f'regularized Ridge RMSE: {mean_squared_error(y_test, y_ridge, squared=False)- mean_squared_error(y_test, y_pred, squared=False)}')
+print(f'regularized Ridge RMSE: {mean_squared_error(y_test, y_ridge, squared=False)}')
 print(f'regularized Ridge R^2: {regular_rsq}')
 
 lasso_reg = Lasso(alpha=alpha)
@@ -116,6 +288,7 @@ regular_rsq = lasso_reg.score(x_train, y_train)
 print(f'Regularized Lasso RMSE: {mean_squared_error(y_test, y_lasso, squared=False)}')
 print(f'Regularized Lasso R^2: {regular_rsq}')
 
+print('Method 2 regularization')
 alpha = 4
 ridge_reg = Ridge(alpha=alpha)
 ridge_reg.fit(x1_train, y1_train)
@@ -139,14 +312,13 @@ print('-----------Question 6-----------------')
 # political affiliation is not considered a demographic characteristics in this case
 df6 = pd.concat([age, gender], axis=1)
 df6 = pd.merge(pd.merge(df6, energyRating, left_index=True, right_index=True), preferenceRating, left_index=True, right_index=True).dropna()
-x = stats.zscore(df6.iloc[:,:2].to_numpy())
+x = df6.iloc[:,:2].to_numpy()
 x_2 = np.average(df6.iloc[:,2:93].to_numpy(), axis=1) # reduce the energy ratings into a single predictor to make it weigh less to fairly consider other predictors
 x = np.concatenate((x, x_2[:, None]), axis=1)
-
+x = stats.zscore(x)
 y = df6.iloc[:,93:].to_numpy()
 y = np.average(y, axis=1)
 x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=random)
-
 multiReg = LinearRegression()
 multiReg.fit(x_train, y_train)
 r_sq = multiReg.score(x_train, y_train)
@@ -154,7 +326,11 @@ y_pred = multiReg.predict(x_test)
 print(f'RMSE: {mean_squared_error(y_test, y_pred, squared=False)}')
 print(f'R^2: {r_sq}')
 
-
+plt.scatter(y_pred, y_test)
+plt.title('Preference average predictions vs actual average')
+plt.xlabel('Predicted average from demographic + energy') 
+plt.ylabel('Actual average preference rating') 
+plt.show()
 
 # for part 2 try to regularize our previous model
 # df6 = pd.concat([age, gender, education], axis=1)
@@ -163,6 +339,7 @@ ridge_reg = Ridge(alpha=alpha)
 ridge_reg.fit(x_train, y_train)
 y_ridge = ridge_reg.predict(x_test)
 regular_rsq = ridge_reg.score(x_train, y_train)
+print(f'Alpha = {alpha}')
 print(f'regularized RMSE: {mean_squared_error(y_test, y_ridge, squared=False)}')
 print(f'regularized score: {regular_rsq}')
 
@@ -170,7 +347,6 @@ lasso_reg = Lasso(alpha=alpha)
 lasso_reg.fit(x_train, y_train)
 y_lasso = lasso_reg.predict(x_test)
 regular_rsq = lasso_reg.score(x_train, y_train)
-print(lasso_reg.coef_)
 print(f'Regularized Lasso RMSE: {mean_squared_error(y_test, y_lasso, squared=False)}')
 print(f'Regularized Lasso R^2: {regular_rsq}')
 # as alpha increases, the RMSE decreases, which indicates that the model is becoming more adaptable to new data
@@ -222,9 +398,10 @@ cId = kmeans.labels_
 cCoords = kmeans.cluster_centers_
 
 for i in range(num_clusters):
-    print('Type of art in each cluser:')
     print(f'{cCoords[int(i-1),0]}, {cCoords[int(i-1),1]}')
     plotIndex = np.argwhere(cId == int(i))
+    print(plotIndex.shape)
+    print(art.iloc[plotIndex.flatten()].shape)
     print(art.iloc[plotIndex.flatten()]['Style'])
     plt.plot(x[plotIndex,0],x[plotIndex,1],'o',markersize=1)
     plt.plot(cCoords[int(i-1),0],cCoords[int(i-1),1],'o',markersize=5,color='black')  
@@ -255,8 +432,6 @@ plt.show()
 # clean data for nulls first 
 df8 = pd.merge(preferenceRating, esteem, left_index=True, right_index=True).dropna()
 esteem8 = df8.iloc[:,91:]
-# scaler.fit(esteem8)
-# esteem8 = scaler.transform(esteem8)
 esteem8 = stats.zscore(esteem8.to_numpy())
 y  = np.average(df8.iloc[:,:91].to_numpy(), axis=1)
 
@@ -277,7 +452,7 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=random)
 
 esteemReg = LinearRegression()
 esteemReg.fit(x_train, y_train)
-r_sq = esteemReg.score(x, y)
+r_sq = esteemReg.score(x_train, y_train)
 y_pred = esteemReg.predict(x_test)
 print(f'RMSE: {mean_squared_error(y_test, y_pred, squared=False)}')
 print(f'R^2: {r_sq}')
@@ -291,7 +466,7 @@ plt.show()
 
 # %%
 # 8c) Regularization
-alpha = 1000
+alpha = 10
 ridge_reg = Ridge(alpha=alpha)
 ridge_reg.fit(x_train, y_train)
 y_ridge = ridge_reg.predict(x_test)
@@ -318,12 +493,15 @@ plt.show()
 # %% 
 # 9a) conduct the principle component extraction with PCA
 df9 = pd.merge(personality, preferenceRating, left_index=True, right_index=True).dropna()
+print(personality.shape)
 personality9 = df9.iloc[:,:12]
+print(df9.shape)
 personality9 = stats.zscore(personality9.to_numpy())
 y = np.average(df9.iloc[:,12:].to_numpy(), axis=1)
 
 #PCA on self-image
 pca_personality = PCA(n_components=3).fit(personality9)
+print(pca_personality.components_)
 print(f'Explained variance ratio: {pca_personality.explained_variance_ratio_}')
 
 # Take a look at the eigenvalues and see that there is indeed 3 under kaiser
@@ -336,6 +514,7 @@ print(f'Explained variance ratio: {pca_personality.explained_variance_ratio_}')
 
 # actually transform the inputs to 3 dimensions
 x = pca_personality.fit_transform(personality9).reshape(len(personality9),3)
+print(x.shape)
 
 
 # %% 
@@ -351,21 +530,23 @@ print(f'score: {r_sq}')
 plt.plot(y_pred, y_test,'o',markersize=4)
 plt.title('Prediction using all 3 principle components')
 plt.xlabel('Prediction from model') 
-plt.ylabel('Actual val') 
+plt.ylabel('Actual val')
 plt.show()
-
+print(x.shape)
 
 X2 = sm.add_constant(x_train)
 print(X2.shape)
+
 est = sm.OLS(y_train, X2)
 est2 = est.fit()
 print(est2.summary())
 # PRINCIPLE COMPONENT 2 IS SIGNIFICANT
 
+
 # %% 
 # 9c) Look at the principle components separately
 x_scale = np.linspace(1,12,12)
-plt.subplot(3, 1, 1)
+plt.title('Principle component 1')
 plt.bar(x_scale,pca_personality.components_[0,:]*-1)
 plt.xlabel('Question')
 plt.ylabel('Loading')
@@ -373,8 +554,7 @@ plt.show()
 # 1 I tend to manipulate others to get my way
 # 4 I tend to exploit others towards my own end
 # = SELFLESSNESS(?), KINDESS
-
-plt.subplot(3, 1, 2)
+plt.title('Principle component 2')
 plt.bar(x_scale,pca_personality.components_[1,:]*-1)
 plt.xlabel('Question')
 plt.ylabel('Loading')
@@ -382,8 +562,7 @@ plt.show()
 # 9 I tend to want others to admire me
 # 10 I tend to want others to pay attention to me
 # = ATTENTION SEEKING
-
-plt.subplot(3, 1, 3)
+plt.title('Principle component 3')
 plt.bar(x_scale,pca_personality.components_[2,:]*-1)
 plt.xlabel('Question')
 plt.ylabel('Loading')
@@ -409,7 +588,7 @@ plt.show()
 
 # %% 
 # 9d) regularization
-alpha = 1
+alpha = 10
 ridge_reg = Ridge(alpha=alpha)
 ridge_reg.fit(x_train, y_train)
 y_ridge = ridge_reg.predict(x_test)
@@ -464,10 +643,10 @@ print(model.coef_)
 y_pred = model.predict(x_test)
 r_sq = model.score(x_test, y_test)
 print(f'Accuracy: {accuracy_score(y_test, y_pred)}') # accuracy of 0.7
-scores = cross_val_score(model, x_train, y_train, cv=10)
+scores = cross_val_score(model, x, y, cv=10)
 scores = pd.Series(scores)
 print(f'Min accuracy: {"{:.2f}".format(scores.min())}, Avg accuracy:{"{:.2f}".format(scores.mean())}, Max Accuracy: {"{:.2f}".format(scores.max())}')
-logit_model1 = sm.Logit(y_train, x_train) 
+logit_model1 = sm.Logit(y, x) 
 result = logit_model1.fit()
 print(result.summary())
 
